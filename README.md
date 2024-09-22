@@ -1,5 +1,5 @@
 Multiple_Disease & Doctor_Recommendations using Machince Learning
-# cd "Multiple_Disease & Doctor_Recommendations"
+
 
 This repository contains the codebase for "Multiple Disease Prediction Streamlit App". The training notebooks &amp; the datasets are also provided in the respective folders. 
 
