@@ -3,14 +3,39 @@ import pickle
 import pandas as pd
 import streamlit as st
 from streamlit_option_menu import option_menu
-
+import base64
 
 # Set page configuration
 st.set_page_config(
     page_title="Multiple Disease Prediction & Doctor Recommendation",
     layout="wide",
-    page_icon="🧑‍⚕️"
+    page_icon="icons.jpg"  # Path to your custom icon file
 )
+
+
+# Adding custom CSS for background image using base64
+def set_background_image(image_path):
+    # Read the image file and encode it to base64
+    with open(image_path, "rb") as image_file:
+        encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+    
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background: url('data:image/png;base64,{encoded_image}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            height: 100vh;  /* Ensure full viewport height */
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Set your image path
+set_background_image('Images/doctor.png')  # Ensure this path is correct
 
 # Caching data to prevent reloading on every interaction
 @st.cache_resource
@@ -120,6 +145,9 @@ if selected == 'Diabetes Prediction':
                     st.info(f"Recommended Doctor: {doctor_recommendation}")
             else:
                 st.error("Diabetes model is not loaded.")
+# Add your name at the end of the Parkinson's Prediction section
+    st.markdown("---")  # Optional: Adds a horizontal line for separation
+    st.write("Developed by Abdul Malik Khan")  # Your name                
 
 # Heart Disease Prediction Page
 if selected == 'Heart Disease Prediction':
@@ -169,6 +197,9 @@ if selected == 'Heart Disease Prediction':
                     st.info(f"Recommended Doctor: {doctor_recommendation}")
             else:
                 st.error("Heart disease model is not loaded.")
+# Add your name at the end of the Parkinson's Prediction section
+    st.markdown("---")  # Optional: Adds a horizontal line for separation
+    st.write("Developed by Abdul Malik Khan")  # Your name                
 
 # Parkinson's Prediction Page
 if selected == "Parkinson's Prediction":
@@ -244,3 +275,7 @@ if selected == "Parkinson's Prediction":
                     st.error(f"Model input error: {e}")
             else:
                 st.error("Parkinson's model is not loaded.")
+                
+# Add your name at the end of the Parkinson's Prediction section
+    st.markdown("---")  # Optional: Adds a horizontal line for separation
+    st.write("Developed by Abdul Malik Khan")  # Your name
