@@ -7,37 +7,34 @@ import base64
 
 # Set page configuration
 st.set_page_config(
-    page_title="Multiple Disease Prediction & Doctor Recommendation",
+    page_title="Disease Prediction & Doctor Recommendation",
     layout="wide",
-    page_icon="icons.jpg"  # Path to your custom icon file
+    page_icon="icons.jpg"
 )
-
 
 # Adding custom CSS for background image using base64
 def set_background_image(image_path):
-    # Read the image file and encode it to base64
     with open(image_path, "rb") as image_file:
         encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
-    
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background: url('data:image/png;base64,{encoded_image}');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            height: 100vh;  /* Ensure full viewport height */
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+        st.markdown(
+            f"""
+            <style>
+            .stApp {{
+                background: url('data:image/png;base64,{encoded_image}');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                height: 100vh;
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-# Set your image path
-set_background_image('Images/doctor.png')  # Ensure this path is correct
+# Set background image
+set_background_image('Images/doctor.png')
 
-# Caching data to prevent reloading on every interaction
+# Load doctors data
 @st.cache_resource
 def load_doctors_data():
     doctors_df_path = os.path.join('dataset', 'doctors.datasets.csv')
@@ -54,9 +51,9 @@ doctors_df = load_doctors_data()
 def load_models():
     models = {}
     model_files = {
-        'diabetes': 'diabetes_model.sav',
+        'diabetes_disease': 'diabetes_disease_model.sav',
         'heart_disease': 'heart_disease_model.sav',
-        'parkinsons': 'parkinsons_model.sav'
+        'parkinsons_disease': 'parkinsons_disease_model.sav'
     }
     for model_name, model_file in model_files.items():
         model_path = os.path.join('saved_models', model_file)
@@ -78,18 +75,18 @@ def get_doctor_recommendation(disease):
         'Parkinson\'s Disease': 'Neurologist'
     }
     specialization = disease_to_specialization.get(disease)
-    
+
     if specialization is None:
         return 'Consult a general physician for further advice.'
-    
+
     if doctors_df.empty or 'Specialization' not in doctors_df.columns:
         return "Doctors dataset is empty or missing 'Specialization' column."
-    
+
     matching_doctors = doctors_df[doctors_df['Specialization'] == specialization]
-    
+
     if matching_doctors.empty:
         return f"No doctors found for specialization: {specialization}"
-    
+
     doctor_info = matching_doctors.iloc[0]
     return f"Doctor: {doctor_info.get('Name', 'N/A')}, Contact: {doctor_info.get('Contact', 'N/A')}, Hospital: {doctor_info.get('Hospital', 'N/A')}"
 
@@ -101,15 +98,59 @@ def get_select_input(label, options, key, placeholder="Select an option"):
 with st.sidebar:
     st.header("Select Prediction Type")
     selected = option_menu(
-        'Multiple Disease Prediction System',
-        ['Diabetes Prediction', 'Heart Disease Prediction', "Parkinson's Prediction"],
-        icons=['activity', 'heart', 'person'],
+        'Multiple Disease Prediction & Doctor Recommendation System',
+        ['Home', 'Diabetes Disease Prediction', 'Heart Disease Prediction', "Parkinson's Disease Prediction", "Symptom-based Prediction"],
+        icons=['house', 'activity', 'heart', 'person', 'stethoscope'],
         default_index=0
     )
 
+# Home Page Content
+if selected == 'Home':
+    st.title('Welcome to the Disease Prediction & Doctor Recommendation System')
+    st.write("This application helps you predict the likelihood of certain diseases based on your input "
+             "and provides recommendations for doctors based on the predicted diseases. "
+             "Please select the appropriate option from the sidebar to get started.")
+    st.write("Developed by Abdul Malik Khan")
+
+# Symptom-based Prediction Page
+if selected == 'Symptom-based Prediction':
+    st.title('Symptom-based Disease Prediction')
+
+    # Define symptoms for each disease
+    diabetes_disease_symptoms = ['Frequent urination', 'Increased thirst', 'Unexplained weight loss', 'Fatigue', 'Blurred vision']
+    heart_disease_symptoms = ['Chest pain', 'Shortness of breath', 'Fatigue', 'Swollen legs/feet', 'Irregular heartbeat']
+    parkinsons_disease_symptoms = ['Tremors', 'Slowed movement', 'Rigid muscles', 'Impaired posture', 'Speech changes']
+
+    st.write("Select the symptoms you're experiencing:")
+
+    with st.expander("Input Symptoms"):
+        selected_diabetes_disease_symptoms = st.multiselect('Diabetes Symptoms', diabetes_disease_symptoms, key='diabetes_disease_symptoms')
+        selected_heart_disease_symptoms = st.multiselect('Heart Disease Symptoms', heart_disease_symptoms, key='heart_disease_symptoms')
+        selected_parkinsons_symptoms = st.multiselect("Parkinson's Disease Symptoms", parkinsons_disease_symptoms, key='parkinsons_disease_symptoms')
+
+    # Symptom-based Disease Prediction
+    if st.button('Predict Disease based on Symptoms'):
+        with st.spinner('Processing your request...'):
+            disease = None
+            if len(selected_diabetes_disease_symptoms) >= 3:
+                disease = 'Diabetes'
+            elif len(selected_heart_disease_symptoms) >= 3:
+                disease = 'Heart Disease'
+            elif len(selected_parkinsons_symptoms) >= 3:
+                disease = 'Parkinson\'s Disease'
+
+            if disease:
+                st.success(f"You may have {disease} based on the selected symptoms.")
+                doctor_recommendation = get_doctor_recommendation(disease)
+                st.info(f"Recommended Doctor: {doctor_recommendation}")
+            else:
+                st.error("Not enough symptoms selected for a disease prediction. Please select at least three symptoms for one of the diseases.")
+    st.markdown("---")
+    st.write("Developed by Abdul Malik Khan")
+
 # Diabetes Prediction Page
-if selected == 'Diabetes Prediction':
-    st.title('Diabetes Prediction using ML')
+if selected == 'Diabetes Disease Prediction':
+    st.title('Diabetes Disease Prediction using ML')
     st.write("Enter the required information and click on 'Predict' to get the results.")
 
     with st.expander("Input Details"):
@@ -135,8 +176,8 @@ if selected == 'Diabetes Prediction':
         with st.spinner('Processing your request...'):
             user_input = [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
             
-            if models['diabetes']:
-                diab_prediction = models['diabetes'].predict([user_input])
+            if models['diabetes_disease']:
+                diab_prediction = models['diabetes_disease'].predict([user_input])
                 diab_diagnosis = 'The person is diabetic' if diab_prediction[0] == 1 else 'The person is not diabetic'
                 st.success(diab_diagnosis)
                 
@@ -144,10 +185,10 @@ if selected == 'Diabetes Prediction':
                     doctor_recommendation = get_doctor_recommendation('Diabetes')
                     st.info(f"Recommended Doctor: {doctor_recommendation}")
             else:
-                st.error("Diabetes model is not loaded.")
-# Add your name at the end of the Parkinson's Prediction section
+                st.error("Diabetes disease model is not loaded.")
+
     st.markdown("---")  # Optional: Adds a horizontal line for separation
-    st.write("Developed by Abdul Malik Khan")  # Your name                
+    st.write("Developed by Abdul Malik Khan")  # Your name                 
 
 # Heart Disease Prediction Page
 if selected == 'Heart Disease Prediction':
@@ -165,23 +206,25 @@ if selected == 'Heart Disease Prediction':
         with col1:
             trestbps = get_select_input('Resting Blood Pressure', list(range(0, 201)), key='trestbps')
         with col2:
-            chol = get_select_input('Serum Cholesterol in mg/dl', list(range(100, 601)), key='chol')
+            chol = get_select_input('Serum Cholesterol', list(range(0, 601)), key='chol')
         with col3:
-            fbs = get_select_input('Fasting Blood Sugar > 120 mg/dl', [0, 1], key='fbs')
+            fbs = get_select_input('Fasting Blood Sugar', [0, 1], key='fbs')  # 0: < 120 mg/dl, 1: > 120 mg/dl
         with col1:
-            restecg = get_select_input('Resting Electrocardiographic results', [0, 1, 2], key='restecg')
+            restecg = get_select_input('Resting ECG results', [0, 1, 2], key='restecg')  # 0: Normal, 1: Abnormal, 2: ST-T wave abnormality
         with col2:
-            thalach = get_select_input('Maximum Heart Rate achieved', list(range(50, 251)), key='thalach')
+            thalach = get_select_input('Maximum Heart Rate Achieved', list(range(0, 201)), key='thalach')
         with col3:
-            exang = get_select_input('Exercise Induced Angina', [0, 1], key='exang')
+            exang = get_select_input('Exercise Induced Angina', [0, 1], key='exang')  # 0: No, 1: Yes
         with col1:
-            oldpeak = get_select_input('ST depression induced by exercise', [round(x * 0.1, 1) for x in range(0, 61)], key='oldpeak')
+            oldpeak = get_select_input('Oldpeak', [round(x * 0.1, 1) for x in range(0, 101)], key='oldpeak')
         with col2:
-            slope = get_select_input('Slope of the peak exercise ST segment', [0, 1, 2], key='slope')
+            slope = get_select_input('Slope of the Peak Exercise ST Segment', [0, 1, 2], key='slope')
         with col3:
-            ca = get_select_input('Major vessels colored by fluoroscopy', [0, 1, 2, 3], key='ca')
+            ca = get_select_input('Number of Major Vessels Colored by Fluoroscopy', [0, 1, 2, 3], key='ca')
         with col1:
-            thal = get_select_input('Thalassemia', [0, 1, 2], key='thal')
+            thal = get_select_input('Thalassemia', [0, 1, 2, 3], key='thal')
+        with col2:
+            target = get_select_input('Target Variable (Heart Disease)', [0, 1], key='target')  # 0: No, 1: Yes
 
     if st.button('Heart Disease Test Result'):
         with st.spinner('Processing your request...'):
@@ -197,12 +240,12 @@ if selected == 'Heart Disease Prediction':
                     st.info(f"Recommended Doctor: {doctor_recommendation}")
             else:
                 st.error("Heart disease model is not loaded.")
-# Add your name at the end of the Parkinson's Prediction section
-    st.markdown("---")  # Optional: Adds a horizontal line for separation
-    st.write("Developed by Abdul Malik Khan")  # Your name                
 
-# Parkinson's Prediction Page
-if selected == "Parkinson's Prediction":
+    st.markdown("---")  # Optional: Adds a horizontal line for separation
+    st.write("Developed by Abdul Malik Khan")  # Your name 
+
+# Parkinson's Disease Prediction Page
+if selected == "Parkinson's Disease Prediction":
     st.title("Parkinson's Disease Prediction using ML")
     st.write("Enter the required information and click on 'Predict' to get the results.")
 
@@ -261,21 +304,16 @@ if selected == "Parkinson's Prediction":
                 shimmer_apq3, shimmer_apq5, mdvp_apq, nhr, hnr, rpde, dfa, spread1, spread2, d2, ppe, shimmer_dda
             ]
 
-            if models['parkinsons']:
-                try:
-                    # Predict with the model
-                    parkinsons_prediction = models['parkinsons'].predict([user_input])
-                    parkinsons_diagnosis = 'The person has Parkinson\'s disease' if parkinsons_prediction[0] == 1 else 'The person does not have Parkinson\'s disease'
-                    st.success(parkinsons_diagnosis)
+            if models['parkinsons_disease']:
+                parkinsons_prediction = models['parkinsons_disease'].predict([user_input])
+                parkinsons_diagnosis = 'The person has Parkinson\'s disease' if parkinsons_prediction[0] == 1 else 'The person does not have Parkinson\'s disease'
+                st.success(parkinsons_diagnosis)
 
-                    if parkinsons_prediction[0] == 1:
-                        doctor_recommendation = get_doctor_recommendation('Parkinson\'s Disease')
-                        st.info(f"Recommended Doctor: {doctor_recommendation}")
-                except ValueError as e:
-                    st.error(f"Model input error: {e}")
+                if parkinsons_prediction[0] == 1:
+                    doctor_recommendation = get_doctor_recommendation('Parkinson\'s Disease')
+                    st.info(f"Recommended Doctor: {doctor_recommendation}")
             else:
-                st.error("Parkinson's model is not loaded.")
-                
-# Add your name at the end of the Parkinson's Prediction section
+                st.error("Parkinson's disease model is not loaded.")
+
     st.markdown("---")  # Optional: Adds a horizontal line for separation
-    st.write("Developed by Abdul Malik Khan")  # Your name
+    st.write("Developed by Abdul Malik Khan")  # Your name 
